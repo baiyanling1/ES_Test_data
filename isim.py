@@ -4,7 +4,7 @@ import string
 import base64
 import random
 
-INIT_IMSI = 460000000000000
+INIT_IMSI = 460010000000000
 INIT_MSISDN = 13000300001
 INIT_ICCID = 46014567897600000000
 # INIT_IMSI = 460120000000000
@@ -45,6 +45,7 @@ class Isim(object):
 
     def get_imsi(self, main_flag):
         self.imsi = self.imsi + main_flag
+        print(self.imsi)
         return self.imsi
 
     def get_msisdn(self, main_flag):

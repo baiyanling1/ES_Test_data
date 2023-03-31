@@ -3,7 +3,7 @@ import threading
 import string
 import pymysql
 
-DB_IP = '10.10.0.4'
+DB_IP = '10.18.40.8'
 DB_PORT = 3306
 DB_USER = "root"
 DB_PWD = "PxX5ksKU801vOYBYj2CVsU1fP3"
