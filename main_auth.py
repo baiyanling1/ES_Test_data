@@ -17,7 +17,7 @@ ES_TEST_MAX_ITEM = 5000
 
 FLAG_MAIN = 1
 FLAG_SECD = 2
-FILE_CSV_PREFIX = "/Users/redtea/Desktop/account-quth"
+FILE_CSV_PREFIX = "/Users/redtea/Desktop/account-auth"
 FILE_CSV_SUFFIX = ".csv"
 FILE_token_expire = "/Users/redtea/Desktop/token_expire.csv"
 
