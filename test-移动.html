@@ -1,0 +1,90 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
+    >
+    <meta http-equiv="X-UA-Compatible"
+          content="ie=edge"
+    >
+    <title>
+      设备开通
+    </title>
+    <link rel="shortcut icon"
+          type="image/x-icon"
+          href="https://it.open.10086.cn/websheet/img/icons/favicon-one.ico?ver=d868e"
+    >
+    <link rel="stylesheet"
+          href="https://it.open.10086.cn/websheet/css/typography.css?ver=d868e"
+    >
+    <link rel="stylesheet"
+          href="https://it.open.10086.cn/websheet/css/base.css?ver=d868e"
+    >
+    <link rel="stylesheet"
+          href="https://it.open.10086.cn/websheet/css/style.css?ver=d868e"
+    >
+    <link rel="stylesheet"
+          href="https://it.open.10086.cn/websheet/css/lib/swiper.min.css"
+    >
+    <script src="https://it.open.10086.cn/websheet/js/lib/jquery/jquery.min.js">
+    </script>
+    <script src="https://it.open.10086.cn/websheet/js/lib/jquery/jquery.base64.js">
+    </script>
+    <script src="https://it.open.10086.cn/websheet/js/lib/jsencrypt.min.js">
+    </script>
+    <script src="https://it.open.10086.cn/websheet/js/lib/vue.min.js">
+    </script>
+    <script src="https://it.open.10086.cn/websheet/js/lib/swiper.min.js">
+    </script>
+    <script src="https://it.open.10086.cn/websheet/js/app/app.js?ver=d868e">
+    </script>
+    <script src="https://it.open.10086.cn/websheet/js/common/util.js?ver=d868e">
+    </script>
+    <script src="https://it.open.10086.cn/websheet/components/ProblemGuideEdge.js?ver=d868e">
+    </script>
+    <script src="https://it.open.10086.cn/websheet/components/BusiGuidePopup.js?ver=d868e">
+    </script>
+    <script src="https://it.open.10086.cn/websheet/components/BusinessHallBranchPopup.js?ver=d868e">
+    </script>
+    <script type="text/javascript">
+      function dismissPage() {
+            DataActivationController.doneSelected();
+        }
+    </script>
+  </head>
+  <body>
+    <div class="result-tip">
+      <div>
+        <div class="center-block info-block">
+          <div class="info-icon">
+            <img src="/websheet/img/icons/error.png"
+                 class="result-tip-img"
+                 alt
+            >
+          </div>
+          <h3 class="info-title">
+            开通失败
+          </h3>
+          <span class="info-desc">
+            系统繁忙，暂不能办理业务，请稍候再试，详询10086
+          </span>
+        </div>
+      </div>
+      <div class="fail-rea">
+        (信息：请求参数错误)
+      </div>
+    </div>
+    <div id="bindFailBtnGroup"
+         class="footer-btn center-block"
+    >
+      <button id="cancelBtn"
+              class="btn btn-white-rounded btn-mid"
+              onclick="dismissPage()"
+      >
+        关&nbsp;&nbsp;闭
+      </button>
+    </div>
+  </body>
+</html>
