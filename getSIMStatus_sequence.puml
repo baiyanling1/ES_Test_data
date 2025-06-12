@@ -1,0 +1,12 @@
+@startuml
+
+participant "Primary Device" as Primary
+participant "ES" as ES
+participant "CSG" as CSG
+
+Primary -> ES: getSIMStatus Request
+ES -> CSG: getLinkedICCID's
+CSG --> ES: Response(List of attach devices)
+ES --> Primary: Response(List of attach devices)
+
+@enduml

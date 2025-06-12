@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth Request Tester</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], select, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 150px;
+            font-family: monospace;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .response {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: none;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>OAuth Request Tester</h1>
+    
+    <div class="form-group">
+        <label for="requestMethod">Request Method:</label>
+        <select id="requestMethod">
+            <option value="GET">GET</option>
+            <option value="POST">POST</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="url">Request URL:</label>
+        <input type="text" id="url" value="https://10.18.40.10:39445/rest/gsmainterface/er/v1/ue/configuration">
+    </div>
+
+    <div class="form-group">
+        <label for="params">Parameters (JSON or Query String):</label>
+        <textarea id="params">app=ap2006&entitlement_version=9.0&app_name=com.samsung.oda.service&terminal_model=SM-S916B&app_version=3.0.00.14&terminal_sw_version=14&vers=1&terminal_vendor=sams&terminal_id=666813300300004</textarea>
+    </div>
+
+    <div class="form-group">
+        <label for="headers">Headers (JSON):</label>
+        <textarea id="headers" placeholder='{"Authorization": "Bearer token", "Content-Type": "application/json"}'></textarea>
+    </div>
+
+    <button onclick="sendRequest()">Send Request</button>
+
+    <div id="response" class="response"></div>
+    <div id="error" class="error"></div>
+
+    <script>
+        async function sendRequest() {
+            const method = document.getElementById('requestMethod').value;
+            const url = document.getElementById('url').value;
+            const paramsText = document.getElementById('params').value;
+            const headersText = document.getElementById('headers').value;
+            const responseDiv = document.getElementById('response');
+            const errorDiv = document.getElementById('error');
+
+            // Clear previous results
+            responseDiv.style.display = 'none';
+            errorDiv.textContent = '';
+
+            try {
+                let params = {};
+                let headers = {};
+
+                // Parse parameters
+                if (paramsText.trim()) {
+                    if (paramsText.trim().startsWith('{')) {
+                        // JSON format
+                        params = JSON.parse(paramsText);
+                    } else {
+                        // Query string format
+                        params = Object.fromEntries(
+                            paramsText.split('&').map(pair => pair.split('='))
+                        );
+                    }
+                }
+
+                // Parse headers if provided
+                if (headersText.trim()) {
+                    headers = JSON.parse(headersText);
+                }
+
+                // Build URL with parameters for GET request
+                let finalUrl = url;
+                if (method === 'GET' && Object.keys(params).length > 0) {
+                    const queryString = new URLSearchParams(params).toString();
+                    finalUrl = `${url}${url.includes('?') ? '&' : '?'}${queryString}`;
+                }
+
+                // Make the request
+                const response = await fetch(finalUrl, {
+                    method: method,
+                    headers: headers,
+                    body: method === 'POST' ? JSON.stringify(params) : undefined,
+                    redirect: 'follow',
+                    mode: 'cors',
+                    credentials: 'include'
+                });
+
+                // Handle redirects
+                if (response.redirected || response.status === 302) {
+                    const redirectUrl = response.headers.get('Location');
+                    if (redirectUrl) {
+                        window.location.href = redirectUrl;
+                        return;
+                    }
+                }
+
+                // Handle response
+                const responseData = await response.text();
+                responseDiv.style.display = 'block';
+                responseDiv.innerHTML = `
+                    <h3>Response Status: ${response.status} ${response.statusText}</h3>
+                    <pre>${responseData}</pre>
+                `;
+
+            } catch (error) {
+                errorDiv.textContent = `Error: ${error.message}`;
+                console.error('Request error:', error);
+            }
+        }
+
+        // Add event listener for form submission
+        document.addEventListener('DOMContentLoaded', function() {
+            // You can add any initialization code here
+        });
+    </script>
+</body>
+</html> 

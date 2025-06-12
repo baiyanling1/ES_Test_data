@@ -1,0 +1,13 @@
+@startuml
+participant "Primary Device" as PD
+participant "ES" as ES
+participant "CSG" as CSG
+
+PD -> ES: LoginCredentials(MSISDN With NRIC/passport)
+ES --> PD: Response(signup URL)
+ES -> CSG: RetrieveCustomer(MSISDN,IdType,IdNumber)
+CSG --> ES: Response(Compare ID if Ok,Proceed)
+ES --> PD: Review The Plan
+PD -> ES: Confirm the Plan
+
+@enduml 

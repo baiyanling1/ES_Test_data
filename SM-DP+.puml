@@ -1,0 +1,19 @@
+@startuml
+
+participant "Primary" as Primary
+participant "ES" as ES
+participant "CSG" as CSG
+participant "SM-DP+" as SMDP
+
+Primary -> ES: User confirms the plan
+ES -> CSG:Customer Eligibility (OrderType)
+CSG-->ES:Response(MessageCode = 0:pass)
+ES -> SMDP: ES2+:DownloadOrder
+SMDP --> ES: Reserved(ICCID)
+ES -> CSG: attachDeviceToPlan
+CSG --> ES: Success
+ES -> SMDP: ES2+:ConfirmOrder
+SMDP --> ES: Success
+ES -> Primary: Response ICCID
+
+@enduml 

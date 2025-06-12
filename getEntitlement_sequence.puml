@@ -1,0 +1,12 @@
+@startuml
+
+participant "Primary Device" as Primary
+participant "ES" as ES
+participant "CSG" as CSG
+
+Primary -> ES: getEntitlement Request
+ES -> CSG: GetEntitlement
+CSG --> ES: STATUS_ENABLED_ENTITLEMENT
+ES --> Primary: getEntitlement Response
+
+@enduml 

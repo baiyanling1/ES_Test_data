@@ -1,0 +1,13 @@
+@startuml
+title Activate Service (API LinkedICCIDs)
+
+participant "Primary Device" as PD
+participant "ES" as ES
+participant "CSG" as CSG
+
+PD -> ES: manageService (ACTIVATE_Service)
+ES -> CSG: API linkediccids
+CSG --> ES: linkediccids Response (ICCID, Status)
+ES --> PD: manageService (ICCID, Status)
+
+@enduml 

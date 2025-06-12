@@ -1,0 +1,13 @@
+@startuml
+title get pairing information (API LinkedICCIDs)
+
+participant "Primary Device" as PD
+participant "ES" as ES
+participant "CSG" as CSG
+
+PD -> ES: acquireConfiguration
+ES -> CSG: API linkediccids
+CSG --> ES: linkediccids Response (ICCID)
+ES --> PD: acquireConfiguration (ICCID)
+
+@enduml 

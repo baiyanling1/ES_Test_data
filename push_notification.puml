@@ -1,0 +1,16 @@
+@startuml
+title Push Notification (API raiseEvent)
+
+participant "Primary Device" as PD
+participant ES
+participant CSG
+participant FCM
+
+note over FCM: Backend status\nupdated to active
+
+CSG -> ES: API raiseEvent
+ES -> FCM: pushNotification
+ES -> CSG: raiseEvent (OK)
+ES -> PD: pushNotification
+
+@enduml 

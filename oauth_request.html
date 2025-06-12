@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth 请求工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="url"], select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 100px;
+            font-family: monospace;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #response {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+            display: none;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        .param-format {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+        .method-specific {
+            display: none;
+        }
+        .redirect-chain {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+        }
+        .redirect-step {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-left: 3px solid #4CAF50;
+        }
+        #deviceInfo {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #e8f5e9;
+            border-radius: 4px;
+        }
+        .action-buttons {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        .action-button {
+            background-color: #2196F3;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .action-button:hover {
+            background-color: #0b7dda;
+        }
+        .mobile-simulator {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            display: none;
+        }
+        .mobile-header {
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            position: relative;
+        }
+        .mobile-content {
+            padding: 15px;
+            background-color: white;
+            min-height: 300px;
+        }
+        .mobile-footer {
+            background-color: #f0f0f0;
+            padding: 10px;
+            text-align: center;
+            border-top: 1px solid #ddd;
+        }
+        .mobile-button {
+            display: inline-block;
+            margin: 5px;
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .mobile-input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .mobile-form {
+            margin-top: 10px;
+        }
+        .mobile-link {
+            color: #2196F3;
+            text-decoration: underline;
+            cursor: pointer;
+            margin: 5px 0;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>OAuth 请求工具</h1>
+        
+        <div id="deviceInfo">
+            <h3>设备信息</h3>
+            <div class="form-group">
+                <label for="userAgent">User-Agent:</label>
+                <input type="text" id="userAgent" value="Mozilla/5.0 (Linux; Android 14; SM-S916B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.210 Mobile Safari/537.36">
+            </div>
+            <div class="form-group">
+                <label for="deviceModel">设备型号:</label>
+                <input type="text" id="deviceModel" value="SM-S916B">
+            </div>
+            <div class="form-group">
+                <label for="appVersion">应用版本:</label>
+                <input type="text" id="appVersion" value="3.0.00.14">
+            </div>
+            <div class="form-group">
+                <label for="osVersion">系统版本:</label>
+                <input type="text" id="osVersion" value="14">
+            </div>
+        </div>
+
+        <form id="oauthForm">
+            <div class="form-group">
+                <label for="url">请求地址 (HTTPS):</label>
+                <input type="url" id="url" name="url" required placeholder="https://example.com/api/oauth" style="width: 100%;">
+            </div>
+            
+            <div class="form-group">
+                <label for="method">请求方法:</label>
+                <select id="method" name="method" onchange="updateParamFormat()">
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="params">请求参数:</label>
+                <div id="getParamsFormat" class="method-specific param-format">
+                    GET参数格式: key1=value1&key2=value2
+                    <br>示例: app=ap2009&entitlement_version=9.0&app_name=com.samsung.oda.service
+                </div>
+                <div id="postParamsFormat" class="method-specific param-format">
+                    POST参数格式 (JSON):
+                    <br>示例: {"app": "ap2009", "entitlement_version": "9.0"}
+                </div>
+                <textarea id="params" name="params"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="headers">请求头 (JSON 格式):</label>
+                <textarea id="headers" name="headers" placeholder='{"Content-Type": "application/json", "Authorization": "Bearer your_token"}'></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="followRedirects">跟随重定向:</label>
+                <select id="followRedirects" name="followRedirects">
+                    <option value="true" selected>是</option>
+                    <option value="false">否</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="credentialsMode">凭证模式:</label>
+                <select id="credentialsMode" name="credentialsMode">
+                    <option value="include">包含凭证 (include)</option>
+                    <option value="same-origin">同源凭证 (same-origin)</option>
+                    <option value="omit">不包含凭证 (omit)</option>
+                </select>
+                <div class="param-format">注意: 如果选择"包含凭证"，服务器必须设置具体的Access-Control-Allow-Origin值，不能使用通配符*</div>
+            </div>
+
+            <div class="form-group">
+                <label for="corsSolution">CORS解决方案:</label>
+                <select id="corsSolution" name="corsSolution">
+                    <option value="none" selected>不使用特殊解决方案</option>
+                    <option value="omit">使用"不包含凭证"模式</option>
+                    <option value="extension">使用浏览器扩展</option>
+                    <option value="proxy">使用代理服务器</option>
+                    <option value="direct">直接请求（忽略CORS）</option>
+                </select>
+                <div class="param-format" id="corsSolutionHelp">
+                    选择最适合你的CORS解决方案
+                </div>
+            </div>
+
+            <div id="extensionInstructions" class="form-group" style="display: none;">
+                <h4>浏览器扩展使用说明</h4>
+                <ol>
+                    <li>安装CORS浏览器扩展，如"CORS Unblock"或"Allow CORS"</li>
+                    <li>启用扩展</li>
+                    <li>刷新页面并重试请求</li>
+                </ol>
+                <p>注意: 这些扩展会修改请求头，绕过CORS限制，仅用于开发测试。</p>
+            </div>
+
+            <div id="directInstructions" class="form-group" style="display: none;">
+                <h4>直接请求使用说明</h4>
+                <ol>
+                    <li>此选项会尝试绕过浏览器的CORS限制</li>
+                    <li>适用于HTTPS+IP地址的情况</li>
+                    <li>如果仍然失败，请尝试使用浏览器扩展或代理服务器</li>
+                </ol>
+                <p>注意: 此方法可能不适用于所有浏览器，特别是较新版本的Chrome。</p>
+            </div>
+
+            <div class="form-group">
+                <label for="useProxy">使用代理:</label>
+                <select id="useProxy" name="useProxy">
+                    <option value="false" selected>不使用代理</option>
+                    <option value="true">使用代理</option>
+                </select>
+            </div>
+
+            <div id="proxySettings" class="form-group" style="display: none;">
+                <label for="proxyUrl">代理服务器地址:</label>
+                <input type="text" id="proxyUrl" name="proxyUrl" placeholder="https://your-proxy-server.com/proxy">
+                <div class="param-format">代理服务器需要支持CORS并正确转发请求</div>
+            </div>
+
+            <button type="submit">发送请求</button>
+        </form>
+
+        <div id="response"></div>
+        <div id="redirectChain" class="redirect-chain" style="display: none;"></div>
+    </div>
+
+    <!-- 手机模拟器 -->
+    <div id="mobileSimulator" class="mobile-simulator">
+        <div class="mobile-header">
+            <span id="mobileTitle">手机浏览器</span>
+        </div>
+        <div class="mobile-content" id="mobileContent">
+            <!-- 内容将通过JavaScript动态加载 -->
+        </div>
+        <div class="mobile-footer">
+            <div class="mobile-button" onclick="goBack()">返回</div>
+            <div class="mobile-button" onclick="refreshPage()">刷新</div>
+        </div>
+    </div>
+
+    <script>
+        // 存储重定向历史
+        let redirectHistory = [];
+        let currentRedirectIndex = -1;
+
+        function updateParamFormat() {
+            const method = document.getElementById('method').value;
+            const getFormat = document.getElementById('getParamsFormat');
+            const postFormat = document.getElementById('postParamsFormat');
+            const paramsInput = document.getElementById('params');
+            
+            if (method === 'GET') {
+                getFormat.style.display = 'block';
+                postFormat.style.display = 'none';
+                paramsInput.placeholder = 'app=ap2009&entitlement_version=9.0&app_name=com.samsung.oda.service';
+            } else {
+                getFormat.style.display = 'none';
+                postFormat.style.display = 'block';
+                paramsInput.placeholder = '{"app": "ap2009", "entitlement_version": "9.0"}';
+            }
+        }
+
+        function getDefaultHeaders() {
+            const userAgent = document.getElementById('userAgent').value;
+            const deviceModel = document.getElementById('deviceModel').value;
+            const appVersion = document.getElementById('appVersion').value;
+            const osVersion = document.getElementById('osVersion').value;
+
+            return {
+                'User-Agent': userAgent,
+                'X-Device-Model': deviceModel,
+                'X-App-Version': appVersion,
+                'X-OS-Version': osVersion,
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+                'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none',
+                'Sec-Fetch-User': '?1',
+                'Upgrade-Insecure-Requests': '1'
+            };
+        }
+
+        function addRedirectStep(url, status, response) {
+            const redirectChain = document.getElementById('redirectChain');
+            redirectChain.style.display = 'block';
+            
+            const step = document.createElement('div');
+            step.className = 'redirect-step';
+            
+            // 创建操作按钮
+            const actionButtons = document.createElement('div');
+            actionButtons.className = 'action-buttons';
+            
+            const openButton = document.createElement('button');
+            openButton.className = 'action-button';
+            openButton.textContent = '在手机模拟器中打开';
+            openButton.onclick = () => openInMobileSimulator(url, response);
+            
+            const continueButton = document.createElement('button');
+            continueButton.className = 'action-button';
+            continueButton.textContent = '继续操作';
+            continueButton.onclick = () => continueMobileOperation(url, response);
+            
+            // 添加新窗口打开按钮
+            const openNewWindowButton = document.createElement('button');
+            openNewWindowButton.className = 'action-button';
+            openNewWindowButton.textContent = '在新窗口打开';
+            openNewWindowButton.onclick = () => window.open(url, '_blank');
+            
+            actionButtons.appendChild(openButton);
+            actionButtons.appendChild(continueButton);
+            actionButtons.appendChild(openNewWindowButton);
+            
+            step.innerHTML = `
+                <strong>重定向到:</strong> ${url}<br>
+                <strong>状态码:</strong> ${status}<br>
+                <strong>响应:</strong><br>
+                <pre>${response}</pre>
+            `;
+            
+            step.appendChild(actionButtons);
+            redirectChain.appendChild(step);
+            
+            // 保存到历史记录
+            redirectHistory.push({
+                url: url,
+                status: status,
+                response: response
+            });
+            currentRedirectIndex = redirectHistory.length - 1;
+            
+            // 自动在新窗口打开OAuth授权页面
+            if (url.includes('/oauth2/authorize') || url.includes('/oauth/authorize')) {
+                // 延迟一下，让用户看到重定向信息
+                setTimeout(() => {
+                    if (confirm('检测到OAuth授权页面，是否在新窗口打开？')) {
+                        window.open(url, '_blank');
+                    }
+                }, 1000);
+            }
+        }
+
+        function openInMobileSimulator(url, response) {
+            const mobileSimulator = document.getElementById('mobileSimulator');
+            const mobileTitle = document.getElementById('mobileTitle');
+            const mobileContent = document.getElementById('mobileContent');
+            
+            // 显示模拟器
+            mobileSimulator.style.display = 'block';
+            
+            // 设置标题
+            try {
+                const urlObj = new URL(url);
+                mobileTitle.textContent = urlObj.hostname;
+                mobileTitle.setAttribute('data-url', url); // 保存完整URL
+            } catch (e) {
+                mobileTitle.textContent = url;
+                mobileTitle.setAttribute('data-url', url);
+            }
+            
+            // 清空内容
+            mobileContent.innerHTML = '';
+            
+            // 尝试解析响应内容
+            try {
+                // 检查是否是JSON
+                if (response.trim().startsWith('{') || response.trim().startsWith('[')) {
+                    try {
+                        const jsonData = JSON.parse(response);
+                        const formattedJson = JSON.stringify(jsonData, null, 2);
+                        mobileContent.innerHTML = `<pre style="white-space: pre-wrap; word-break: break-all;">${formattedJson}</pre>`;
+                        return;
+                    } catch (e) {
+                        // 不是有效的JSON，继续尝试其他格式
+                    }
+                }
+                
+                // 检查是否是HTML
+                if (response.includes('<!DOCTYPE html') || response.includes('<html') || response.includes('<body')) {
+                    // 提取body内容
+                    const bodyMatch = response.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+                    if (bodyMatch && bodyMatch[1]) {
+                        // 创建一个临时容器来解析HTML
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = bodyMatch[1];
+                        
+                        // 移除脚本标签
+                        const scripts = tempDiv.getElementsByTagName('script');
+                        for (let i = scripts.length - 1; i >= 0; i--) {
+                            scripts[i].parentNode.removeChild(scripts[i]);
+                        }
+                        
+                        // 移除样式标签
+                        const styles = tempDiv.getElementsByTagName('style');
+                        for (let i = styles.length - 1; i >= 0; i--) {
+                            styles[i].parentNode.removeChild(styles[i]);
+                        }
+                        
+                        // 添加基本样式
+                        const styleElement = document.createElement('style');
+                        styleElement.textContent = `
+                            body { font-family: Arial, sans-serif; margin: 0; padding: 15px; }
+                            input, button, select, textarea { width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; }
+                            button { background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+                            button:hover { background-color: #45a049; }
+                            a { color: #2196F3; text-decoration: none; }
+                            a:hover { text-decoration: underline; }
+                            form { margin-bottom: 20px; }
+                            label { display: block; margin-bottom: 5px; }
+                            .error { color: red; }
+                            .success { color: green; }
+                        `;
+                        mobileContent.appendChild(styleElement);
+                        
+                        // 添加内容
+                        mobileContent.appendChild(tempDiv);
+                        
+                        // 添加交互元素
+                        addInteractiveElements(mobileContent);
+                        
+                        return;
+                    }
+                }
+                
+                // 检查是否是OAuth授权页面
+                if (url.includes('/oauth2/authorize') || url.includes('/oauth/authorize')) {
+                    // 创建一个简单的OAuth授权表单
+                    const oauthForm = document.createElement('div');
+                    oauthForm.innerHTML = `
+                        <h2>OAuth授权</h2>
+                        <p>您正在授权访问以下应用：</p>
+                        <div class="app-info">
+                            <p><strong>应用ID:</strong> ${getParamFromUrl(url, 'client_id') || '未知'}</p>
+                            <p><strong>范围:</strong> ${getParamFromUrl(url, 'scope') || '未知'}</p>
+                        </div>
+                        <form id="oauthForm">
+                            <div class="form-group">
+                                <label for="username">用户名:</label>
+                                <input type="text" id="username" name="username" placeholder="输入用户名">
+                            </div>
+                            <div class="form-group">
+                                <label for="password">密码:</label>
+                                <input type="password" id="password" name="password" placeholder="输入密码">
+                            </div>
+                            <div class="form-group">
+                                <button type="submit" class="approve-btn">授权访问</button>
+                            </div>
+                            <div class="form-group">
+                                <button type="button" class="deny-btn">拒绝访问</button>
+                            </div>
+                        </form>
+                    `;
+                    
+                    // 添加样式
+                    const styleElement = document.createElement('style');
+                    styleElement.textContent = `
+                        body { font-family: Arial, sans-serif; margin: 0; padding: 15px; }
+                        h2 { margin-top: 0; }
+                        .app-info { background-color: #f5f5f5; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
+                        .form-group { margin-bottom: 15px; }
+                        input { width: 100%; padding: 8px; box-sizing: border-box; }
+                        button { width: 100%; padding: 10px; margin-bottom: 10px; border: none; border-radius: 5px; cursor: pointer; }
+                        .approve-btn { background-color: #4CAF50; color: white; }
+                        .deny-btn { background-color: #f44336; color: white; }
+                    `;
+                    mobileContent.appendChild(styleElement);
+                    
+                    // 添加表单提交事件
+                    const form = oauthForm.querySelector('#oauthForm');
+                    form.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        const username = document.getElementById('username').value;
+                        const password = document.getElementById('password').value;
+                        
+                        // 显示授权成功消息
+                        mobileContent.innerHTML = `
+                            <div style="text-align: center; padding: 20px;">
+                                <h2>授权成功</h2>
+                                <p>您已成功授权访问。</p>
+                                <p>用户名: ${username}</p>
+                                <p>正在处理重定向...</p>
+                            </div>
+                        `;
+                        
+                        // 模拟重定向
+                        setTimeout(() => {
+                            const redirectUri = getParamFromUrl(url, 'redirect_uri');
+                            if (redirectUri) {
+                                // 构建重定向URL
+                                const redirectUrl = new URL(redirectUri);
+                                redirectUrl.searchParams.append('code', 'simulated_auth_code_' + Date.now());
+                                redirectUrl.searchParams.append('state', getParamFromUrl(url, 'state') || '');
+                                
+                                // 添加到重定向链
+                                addRedirectStep(redirectUrl.toString(), 200, '授权成功，已重定向');
+                                
+                                // 在新窗口打开重定向URL
+                                window.open(redirectUrl.toString(), '_blank');
+                            } else {
+                                mobileContent.innerHTML += '<p>错误: 未找到重定向URI</p>';
+                            }
+                        }, 1500);
+                    });
+                    
+                    // 添加拒绝按钮事件
+                    const denyBtn = oauthForm.querySelector('.deny-btn');
+                    denyBtn.addEventListener('click', function() {
+                        mobileContent.innerHTML = `
+                            <div style="text-align: center; padding: 20px;">
+                                <h2>授权被拒绝</h2>
+                                <p>您已拒绝授权访问。</p>
+                            </div>
+                        `;
+                    });
+                    
+                    mobileContent.appendChild(oauthForm);
+                    return;
+                }
+                
+                // 如果是纯文本，直接显示
+                mobileContent.innerHTML = `<pre style="white-space: pre-wrap; word-break: break-all;">${response}</pre>`;
+            } catch (error) {
+                mobileContent.innerHTML = `<div class="error">无法解析响应内容: ${error.message}</div>`;
+            }
+        }
+        
+        // 从URL中获取参数
+        function getParamFromUrl(url, paramName) {
+            try {
+                const urlObj = new URL(url);
+                return urlObj.searchParams.get(paramName);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function addInteractiveElements(container) {
+            // 查找所有链接
+            const links = container.querySelectorAll('a');
+            links.forEach(link => {
+                link.className = 'mobile-link';
+                link.onclick = (e) => {
+                    e.preventDefault();
+                    const href = link.getAttribute('href');
+                    continueMobileOperation(href);
+                };
+            });
+            
+            // 查找所有表单
+            const forms = container.querySelectorAll('form');
+            forms.forEach(form => {
+                form.className = 'mobile-form';
+                form.onsubmit = (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(form);
+                    const formUrl = form.action ? new URL(form.action, url).href : url;
+                    const formMethod = form.method.toUpperCase() || 'GET';
+                    
+                    // 收集表单数据
+                    const formParams = {};
+                    for (const [key, value] of formData.entries()) {
+                        formParams[key] = value;
+                    }
+                    
+                    // 继续操作
+                    continueMobileOperation(formUrl, null, formMethod, formParams);
+                };
+            });
+            
+            // 查找所有按钮
+            const buttons = container.querySelectorAll('button, input[type="submit"]');
+            buttons.forEach(button => {
+                button.className = 'mobile-button';
+            });
+            
+            // 查找所有输入框
+            const inputs = container.querySelectorAll('input[type="text"], input[type="password"], textarea');
+            inputs.forEach(input => {
+                input.className = 'mobile-input';
+            });
+        }
+
+        function continueMobileOperation(url, response = null, method = 'GET', params = {}) {
+            // 显示加载中
+            const mobileContent = document.getElementById('mobileContent');
+            mobileContent.innerHTML = '<div style="text-align: center; padding: 20px;">加载中...</div>';
+            
+            // 准备请求头
+            const headers = getDefaultHeaders();
+            
+            // 准备请求体
+            let body = undefined;
+            if (method === 'POST') {
+                body = JSON.stringify(params);
+                headers['Content-Type'] = 'application/json';
+            }
+            
+            // 获取凭证模式和CORS解决方案
+            const credentialsMode = document.getElementById('credentialsMode').value;
+            const corsSolution = document.getElementById('corsSolution').value;
+            
+            // 根据CORS解决方案调整凭证模式
+            let effectiveCredentialsMode = credentialsMode;
+            if (corsSolution === 'omit') {
+                effectiveCredentialsMode = 'omit';
+            }
+            
+            // 检查是否使用代理
+            const useProxy = document.getElementById('useProxy').value === 'true';
+            let requestUrl = url;
+            
+            if (useProxy || corsSolution === 'proxy') {
+                const proxyUrl = document.getElementById('proxyUrl').value;
+                if (!proxyUrl) {
+                    mobileContent.innerHTML = '<div class="error">请设置代理服务器地址</div>';
+                    return;
+                }
+                
+                // 构建代理URL
+                requestUrl = `${proxyUrl}?url=${encodeURIComponent(url)}`;
+                if (method === 'GET' && Object.keys(params).length > 0) {
+                    const queryString = new URLSearchParams(params).toString();
+                    requestUrl += `&${queryString}`;
+                }
+            } else if (method === 'GET' && Object.keys(params).length > 0) {
+                const queryString = new URLSearchParams(params).toString();
+                requestUrl = `${url}${url.includes('?') ? '&' : '?'}${queryString}`;
+            }
+            
+            // 发送请求
+            fetch(requestUrl, {
+                method: method,
+                headers: headers,
+                body: body,
+                redirect: 'manual',
+                credentials: effectiveCredentialsMode, // 使用有效的凭证模式
+                mode: corsSolution === 'direct' ? 'no-cors' : 'cors' // 直接请求模式
+            })
+            .then(response => {
+                // 如果是no-cors模式，response.type会是'opaque'，无法读取内容
+                if (response.type === 'opaque') {
+                    return {
+                        status: 0,
+                        text: '无法读取响应内容（no-cors模式）',
+                        headers: new Headers()
+                    };
+                }
+                
+                return response.text().then(text => {
+                    return {
+                        status: response.status,
+                        text: text,
+                        headers: response.headers
+                    };
+                });
+            })
+            .then(result => {
+                // 更新模拟器内容
+                openInMobileSimulator(url, result.text);
+                
+                // 检查是否有重定向
+                if (result.status >= 300 && result.status < 400) {
+                    const location = result.headers.get('Location');
+                    if (location) {
+                        // 添加到重定向链
+                        addRedirectStep(location, result.status, result.text);
+                    }
+                }
+            })
+            .catch(error => {
+                mobileContent.innerHTML = `<div class="error">请求失败: ${error.message}</div>`;
+            });
+        }
+
+        function goBack() {
+            if (currentRedirectIndex > 0) {
+                currentRedirectIndex--;
+                const prevStep = redirectHistory[currentRedirectIndex];
+                openInMobileSimulator(prevStep.url, prevStep.response);
+            } else {
+                document.getElementById('mobileSimulator').style.display = 'none';
+            }
+        }
+
+        function refreshPage() {
+            const mobileTitle = document.getElementById('mobileTitle');
+            const currentUrl = mobileTitle.getAttribute('data-url');
+            if (currentUrl) {
+                continueMobileOperation(currentUrl);
+            }
+        }
+
+        async function followRedirect(url, method, headers, body, redirectCount = 0) {
+            if (redirectCount > 10) {
+                throw new Error('重定向次数过多');
+            }
+
+            // 获取凭证模式和CORS解决方案
+            const credentialsMode = document.getElementById('credentialsMode').value;
+            const corsSolution = document.getElementById('corsSolution').value;
+            
+            // 根据CORS解决方案调整凭证模式
+            let effectiveCredentialsMode = credentialsMode;
+            if (corsSolution === 'omit') {
+                effectiveCredentialsMode = 'omit';
+            }
+            
+            // 检查是否使用代理
+            const useProxy = document.getElementById('useProxy').value === 'true';
+            let requestUrl = url;
+            
+            if (useProxy || corsSolution === 'proxy') {
+                const proxyUrl = document.getElementById('proxyUrl').value;
+                if (!proxyUrl) {
+                    throw new Error('请设置代理服务器地址');
+                }
+                
+                // 构建代理URL
+                requestUrl = `${proxyUrl}?url=${encodeURIComponent(url)}`;
+            }
+
+            try {
+                const response = await fetch(requestUrl, {
+                    method: method,
+                    headers: headers,
+                    body: body,
+                    redirect: 'manual', // 手动处理重定向
+                    credentials: effectiveCredentialsMode, // 使用有效的凭证模式
+                    mode: corsSolution === 'direct' ? 'no-cors' : 'cors' // 直接请求模式
+                });
+
+                // 如果是no-cors模式，response.type会是'opaque'，无法读取内容
+                let responseText = '';
+                if (response.type !== 'opaque') {
+                    responseText = await response.text();
+                } else {
+                    responseText = '无法读取响应内容（no-cors模式）';
+                }
+                
+                addRedirectStep(url, response.status, responseText);
+
+                // 检查是否有重定向
+                if (response.status >= 300 && response.status < 400) {
+                    const location = response.headers.get('Location');
+                    if (location) {
+                        // 检查是否是OAuth授权页面
+                        if (location.includes('/oauth2/authorize') || location.includes('/oauth/authorize')) {
+                            // 直接在新窗口打开OAuth授权页面
+                            window.open(location, '_blank');
+                            return {
+                                url: location,
+                                status: response.status,
+                                response: '已在浏览器中打开OAuth授权页面'
+                            };
+                        }
+                        
+                        // 递归处理重定向
+                        return followRedirect(location, method, headers, body, redirectCount + 1);
+                    }
+                }
+
+                return {
+                    url: url,
+                    status: response.status,
+                    response: responseText
+                };
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        document.getElementById('oauthForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const url = document.getElementById('url').value;
+            const method = document.getElementById('method').value;
+            const paramsText = document.getElementById('params').value;
+            const headersText = document.getElementById('headers').value;
+            const followRedirects = document.getElementById('followRedirects').value === 'true';
+            const credentialsMode = document.getElementById('credentialsMode').value;
+            const useProxy = document.getElementById('useProxy').value === 'true';
+            const corsSolution = document.getElementById('corsSolution').value;
+            
+            // 检查是否是OAuth授权URL
+            const isOAuthUrl = url.includes('/oauth2/authorize') || url.includes('/oauth/authorize');
+            
+            // 如果是OAuth授权URL，询问是否直接在新窗口打开
+            if (isOAuthUrl && confirm('检测到OAuth授权URL，是否直接在新窗口打开？')) {
+                window.open(url, '_blank');
+                return;
+            }
+            
+            // 根据CORS解决方案调整凭证模式
+            let effectiveCredentialsMode = credentialsMode;
+            if (corsSolution === 'omit') {
+                effectiveCredentialsMode = 'omit';
+            }
+            
+            let params = {};
+            let headers = {};
+            
+            try {
+                // 合并默认请求头和用户输入的请求头
+                headers = { ...getDefaultHeaders() };
+                if (headersText) {
+                    const userHeaders = JSON.parse(headersText);
+                    headers = { ...headers, ...userHeaders };
+                }
+                
+                if (paramsText) {
+                    if (method === 'GET') {
+                        const searchParams = new URLSearchParams(paramsText);
+                        params = Object.fromEntries(searchParams);
+                    } else {
+                        params = JSON.parse(paramsText);
+                    }
+                }
+            } catch (error) {
+                showError('参数格式错误，请检查输入');
+                return;
+            }
+
+            const responseDiv = document.getElementById('response');
+            const redirectChain = document.getElementById('redirectChain');
+            responseDiv.style.display = 'block';
+            redirectChain.innerHTML = ''; // 清空重定向链
+            redirectHistory = []; // 清空历史记录
+            currentRedirectIndex = -1;
+            responseDiv.textContent = '正在发送请求...';
+
+            try {
+                let requestUrl = url;
+                
+                // 检查是否使用代理
+                if (useProxy || corsSolution === 'proxy') {
+                    const proxyUrl = document.getElementById('proxyUrl').value;
+                    if (!proxyUrl) {
+                        showError('请设置代理服务器地址');
+                        return;
+                    }
+                    
+                    // 构建代理URL
+                    requestUrl = `${proxyUrl}?url=${encodeURIComponent(url)}`;
+                    if (method === 'GET' && Object.keys(params).length > 0) {
+                        const queryString = new URLSearchParams(params).toString();
+                        requestUrl += `&${queryString}`;
+                    }
+                } else if (method === 'GET' && Object.keys(params).length > 0) {
+                    const queryString = new URLSearchParams(params).toString();
+                    requestUrl = `${url}${url.includes('?') ? '&' : '?'}${queryString}`;
+                }
+
+                const body = method === 'POST' ? JSON.stringify(params) : undefined;
+
+                if (followRedirects) {
+                    const result = await followRedirect(requestUrl, method, headers, body);
+                    responseDiv.textContent = `最终URL: ${result.url}\n状态码: ${result.status}\n\n响应内容:\n${result.response}`;
+                    
+                    // 自动打开最后一个重定向页面
+                    if (redirectHistory.length > 0) {
+                        const lastStep = redirectHistory[redirectHistory.length - 1];
+                        openInMobileSimulator(lastStep.url, lastStep.response);
+                    }
+                } else {
+                    const response = await fetch(requestUrl, {
+                        method: method,
+                        headers: headers,
+                        body: body,
+                        credentials: effectiveCredentialsMode, // 使用有效的凭证模式
+                        mode: corsSolution === 'direct' ? 'no-cors' : 'cors' // 直接请求模式
+                    });
+
+                    // 如果是no-cors模式，response.type会是'opaque'，无法读取内容
+                    let responseData = '';
+                    if (response.type !== 'opaque') {
+                        responseData = await response.text();
+                    } else {
+                        responseData = '无法读取响应内容（no-cors模式）';
+                    }
+                    
+                    responseDiv.textContent = `状态码: ${response.status}\n\n响应内容:\n${responseData}`;
+                    
+                    // 添加到重定向历史
+                    addRedirectStep(requestUrl, response.status, responseData);
+                }
+            } catch (error) {
+                let errorMessage = `请求失败: ${error.message}\n\n`;
+                if (error.message.includes('CORS')) {
+                    errorMessage += 'CORS错误解决方案:\n';
+                    errorMessage += '1. 尝试更改凭证模式为"不包含凭证"或"同源凭证"\n';
+                    errorMessage += '2. 使用"直接请求"选项（适用于HTTPS+IP地址）\n';
+                    errorMessage += '3. 使用浏览器扩展绕过CORS限制\n';
+                    errorMessage += '4. 使用代理服务器转发请求\n';
+                    errorMessage += '5. 在服务器端添加正确的CORS头部\n';
+                }
+                showError(errorMessage);
+            }
+        });
+
+        function showError(message) {
+            const responseDiv = document.getElementById('response');
+            responseDiv.style.display = 'block';
+            responseDiv.innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        // 初始化参数格式显示
+        updateParamFormat();
+        
+        // 添加代理设置显示/隐藏逻辑
+        document.getElementById('useProxy').addEventListener('change', function() {
+            const proxySettings = document.getElementById('proxySettings');
+            proxySettings.style.display = this.value === 'true' ? 'block' : 'none';
+        });
+        
+        // 添加CORS解决方案显示/隐藏逻辑
+        document.getElementById('corsSolution').addEventListener('change', function() {
+            const extensionInstructions = document.getElementById('extensionInstructions');
+            const directInstructions = document.getElementById('directInstructions');
+            const proxySettings = document.getElementById('proxySettings');
+            const useProxySelect = document.getElementById('useProxy');
+            const corsSolutionHelp = document.getElementById('corsSolutionHelp');
+            
+            // 隐藏所有相关元素
+            extensionInstructions.style.display = 'none';
+            directInstructions.style.display = 'none';
+            proxySettings.style.display = 'none';
+            
+            // 根据选择显示相应元素
+            if (this.value === 'extension') {
+                extensionInstructions.style.display = 'block';
+                corsSolutionHelp.textContent = '请安装并启用CORS浏览器扩展，然后刷新页面';
+            } else if (this.value === 'direct') {
+                directInstructions.style.display = 'block';
+                corsSolutionHelp.textContent = '将使用no-cors模式发送请求，适用于HTTPS+IP地址的情况';
+            } else if (this.value === 'proxy') {
+                proxySettings.style.display = 'block';
+                useProxySelect.value = 'true';
+                corsSolutionHelp.textContent = '请设置代理服务器地址';
+            } else if (this.value === 'omit') {
+                corsSolutionHelp.textContent = '将自动使用"不包含凭证"模式，适用于服务器返回Access-Control-Allow-Origin: *的情况';
+            } else {
+                corsSolutionHelp.textContent = '选择最适合你的CORS解决方案';
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,13 @@
+@startuml
+
+participant "Primary Device" as Primary
+participant "ES" as ES
+participant "CSG" as CSG
+
+Primary -> ES: signUpForSIMService
+ES --> Primary: Response(signup URL)
+ES -> CSG: getApplicablePlans
+CSG --> ES: PlanDetails
+ES -> Primary: Display Plans
+
+@enduml 

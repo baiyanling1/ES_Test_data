@@ -1,0 +1,28 @@
+@startuml
+title MultiSim First Time Signup (Samsung)
+
+' Define participants
+box "User" 
+participant "Secondary Device" as SD
+participant "Primary Device" as PD
+end box
+
+box "Redtea" 
+participant "ES" as CDP
+end box
+
+box "Digi" 
+participant "CSG" as CSG
+participant "Websheet Server" as WS
+participant "AAA" as AAA
+end box
+
+' Define the sequence
+PD -> CDP: manageSubscription (SUBSCRIBE)
+CDP -> CSG: linkedIccIds
+CSG --> CDP: linkedIccIds (ICCID)
+CDP -> CSG: geteSIMprofilestatus
+CSG --> CDP: INSTALLED
+CDP --> PD: Response (SignUp URL,UserData)
+
+@enduml 

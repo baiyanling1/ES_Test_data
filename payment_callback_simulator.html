@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Payment Callback Monitor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 5px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        .log-container {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 20px;
+            background-color: #f5f5f5;
+        }
+        .log-entry {
+            margin-bottom: 10px;
+            padding: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        .status {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        .status.active {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .status.inactive {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            background-color: #f5f5f5;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Enhanced Payment Callback Monitor</h2>
+        
+        <div id="statusIndicator" class="status inactive">
+            Monitor Status: Inactive
+        </div>
+        
+        <div class="controls">
+            <button onclick="startMonitoring()">Start Monitoring</button>
+            <button onclick="stopMonitoring()">Stop Monitoring</button>
+            <button onclick="clearLogs()">Clear Logs</button>
+            <button onclick="exportLogs()">Export Logs</button>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('network')">Network</div>
+            <div class="tab" onclick="switchTab('websocket')">WebSocket</div>
+            <div class="tab" onclick="switchTab('iframe')">Iframe</div>
+            <div class="tab" onclick="switchTab('storage')">Storage</div>
+        </div>
+
+        <div id="networkTab" class="tab-content active">
+            <div class="log-container" id="logContainer">
+                <div class="log-entry">Waiting for network requests...</div>
+            </div>
+        </div>
+
+        <div id="websocketTab" class="tab-content">
+            <div class="log-container" id="wsLogContainer">
+                <div class="log-entry">Waiting for WebSocket connections...</div>
+            </div>
+        </div>
+
+        <div id="iframeTab" class="tab-content">
+            <div class="log-container" id="iframeLogContainer">
+                <div class="log-entry">Waiting for iframe messages...</div>
+            </div>
+        </div>
+
+        <div id="storageTab" class="tab-content">
+            <div class="log-container" id="storageLogContainer">
+                <div class="log-entry">Waiting for storage changes...</div>
+            </div>
+        </div>
+
+        <div class="result" id="result">
+            <h3>Last Callback Details:</h3>
+            <pre id="resultContent"></pre>
+        </div>
+    </div>
+
+    <script>
+        let isMonitoring = false;
+        let originalFetch = window.fetch;
+        let originalXHR = window.XMLHttpRequest;
+        let originalWebSocket = window.WebSocket;
+        let originalPostMessage = window.postMessage;
+        let originalSetItem = localStorage.setItem;
+        let originalSetItemSession = sessionStorage.setItem;
+
+        function startMonitoring() {
+            if (isMonitoring) return;
+            isMonitoring = true;
+            
+            document.getElementById('statusIndicator').className = 'status active';
+            document.getElementById('statusIndicator').textContent = 'Monitor Status: Active';
+            
+            // 重写 fetch
+            window.fetch = function() {
+                const request = arguments[0];
+                const options = arguments[1] || {};
+                
+                logRequest('Fetch', request, options);
+                
+                return originalFetch.apply(this, arguments)
+                    .then(response => {
+                        response.clone().json().then(data => {
+                            logResponse('Fetch', response.url, data);
+                        }).catch(() => {});
+                        return response;
+                    });
+            };
+
+            // 重写 XMLHttpRequest
+            window.XMLHttpRequest = function() {
+                const xhr = new originalXHR();
+                const originalOpen = xhr.open;
+                const originalSend = xhr.send;
+
+                xhr.open = function() {
+                    logRequest('XHR', arguments[1], {
+                        method: arguments[0]
+                    });
+                    return originalOpen.apply(this, arguments);
+                };
+
+                xhr.send = function() {
+                    if (arguments[0]) {
+                        try {
+                            const data = JSON.parse(arguments[0]);
+                            logRequest('XHR', xhr.responseURL, {
+                                method: xhr._method,
+                                body: data
+                            });
+                        } catch (e) {}
+                    }
+                    return originalSend.apply(this, arguments);
+                };
+
+                xhr.addEventListener('load', function() {
+                    if (xhr.responseText) {
+                        try {
+                            const data = JSON.parse(xhr.responseText);
+                            logResponse('XHR', xhr.responseURL, data);
+                        } catch (e) {}
+                    }
+                });
+
+                return xhr;
+            };
+
+            // 重写 WebSocket
+            window.WebSocket = function(url, protocols) {
+                const ws = new originalWebSocket(url, protocols);
+                
+                ws.addEventListener('open', function() {
+                    addWsLogEntry(`WebSocket connected to ${url}`);
+                });
+                
+                ws.addEventListener('message', function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        addWsLogEntry(`WebSocket message from ${url}: ${JSON.stringify(data, null, 2)}`);
+                    } catch (e) {
+                        addWsLogEntry(`WebSocket message from ${url}: ${event.data}`);
+                    }
+                });
+                
+                ws.addEventListener('close', function() {
+                    addWsLogEntry(`WebSocket connection to ${url} closed`);
+                });
+                
+                return ws;
+            };
+
+            // 监听 iframe 消息
+            window.addEventListener('message', function(event) {
+                addIframeLogEntry(`Message from ${event.origin}: ${JSON.stringify(event.data)}`);
+            });
+
+            // 监听 localStorage 变化
+            localStorage.setItem = function(key, value) {
+                addStorageLogEntry(`localStorage.setItem(${key}, ${value})`);
+                return originalSetItem.apply(this, arguments);
+            };
+
+            // 监听 sessionStorage 变化
+            sessionStorage.setItem = function(key, value) {
+                addStorageLogEntry(`sessionStorage.setItem(${key}, ${value})`);
+                return originalSetItemSession.apply(this, arguments);
+            };
+
+            addLogEntry('Started monitoring all callback types...');
+        }
+
+        function stopMonitoring() {
+            if (!isMonitoring) return;
+            isMonitoring = false;
+            
+            window.fetch = originalFetch;
+            window.XMLHttpRequest = originalXHR;
+            window.WebSocket = originalWebSocket;
+            
+            document.getElementById('statusIndicator').className = 'status inactive';
+            document.getElementById('statusIndicator').textContent = 'Monitor Status: Inactive';
+            
+            addLogEntry('Stopped monitoring.');
+        }
+
+        function clearLogs() {
+            document.getElementById('logContainer').innerHTML = '';
+            document.getElementById('wsLogContainer').innerHTML = '';
+            document.getElementById('iframeLogContainer').innerHTML = '';
+            document.getElementById('storageLogContainer').innerHTML = '';
+            
+            addLogEntry('All logs cleared.');
+        }
+
+        function exportLogs() {
+            const logs = {
+                network: document.getElementById('logContainer').innerText,
+                websocket: document.getElementById('wsLogContainer').innerText,
+                iframe: document.getElementById('iframeLogContainer').innerText,
+                storage: document.getElementById('storageLogContainer').innerText
+            };
+            
+            const blob = new Blob([JSON.stringify(logs, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'payment_callback_logs.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function switchTab(tabName) {
+            // 隐藏所有标签内容
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 取消所有标签的激活状态
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 激活选中的标签
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
+        }
+
+        function logRequest(type, url, options) {
+            const log = {
+                type: type,
+                method: options.method || 'GET',
+                url: url,
+                data: options.body || null,
+                timestamp: new Date().toISOString()
+            };
+            
+            addLogEntry(`[${log.timestamp}] ${type} Request to ${url}`);
+            if (log.data) {
+                addLogEntry(`Request Data: ${JSON.stringify(log.data, null, 2)}`);
+            }
+        }
+
+        function logResponse(type, url, data) {
+            addLogEntry(`Response from ${url}:`);
+            addLogEntry(JSON.stringify(data, null, 2));
+        }
+
+        function addLogEntry(message) {
+            const logContainer = document.getElementById('logContainer');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.textContent = message;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function addWsLogEntry(message) {
+            const logContainer = document.getElementById('wsLogContainer');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.textContent = message;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function addIframeLogEntry(message) {
+            const logContainer = document.getElementById('iframeLogContainer');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.textContent = message;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function addStorageLogEntry(message) {
+            const logContainer = document.getElementById('storageLogContainer');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.textContent = message;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+    </script>
+</body>
+</html> 

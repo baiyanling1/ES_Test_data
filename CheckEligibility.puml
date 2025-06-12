@@ -1,0 +1,13 @@
+@startuml
+title CheckEligibility (API get Entitlement)
+
+participant "Primary Device" as PD
+participant "ES" as ES
+participant "CSG" as CSG
+
+PD -> ES: CheckEligibility
+ES -> CSG: getEntitlement (Multi sim)
+CSG --> ES: getEntitlement Response\n(STATUS_DISABLED_ENTITLEMENT)
+ES --> PD: CheckEligibility\n(CompanionAppEligibility, NotEnabledURL, NotEnabledUserdata)
+
+@enduml 
