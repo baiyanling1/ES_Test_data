@@ -1,0 +1,68 @@
+@startuml Magnolia-Digi
+
+participant TargetDevice
+participant SourceDevice
+participant "Entitlement Server" as ES
+participant "Carrier IT(CSG)" as CSG
+participant "CRM/NFO/CoreNW" as CRAN
+participant "AAA (via DRA)" as AAA
+participant "SM-DP+" as SMDP
+
+note over TargetDevice, SourceDevice: Put devices together and login to same iCloud account\nDevices can exchange info via iCloud and near-field comm mechanisms
+
+note over SourceDevice, AAA: EAP-AKA Authentication
+group Check eligibility
+SourceDevice -> ES: getAuthentication&getEntitlement (iphone-plan-transfer)
+ES -> CSG: CustomerEligibility(MSISDN,OrderType)
+CSG -> ES: ValidationResultList=[MessageCode=0: pass]
+ES -> SourceDevice: getEntitlement (result=STATUS_ENABLED_ENTITLEMENT)
+end
+group TrustFlag Verification
+SourceDevice -> ES: getAuthentication&getCarrierAuthorizationNonce
+ES -> SourceDevice: getCarrierAuthorizationNonce (nonce)
+SourceDevice -> ES: getAuthentication&authenticateTrustFlag Request
+ES -> SourceDevice: authenticateTrustFlag (authorization-token)
+end
+group Pre-Flight Check
+SourceDevice -> ES: transferAuthorization (authorization-token,retrieve-transfer-type=true)
+ES -> SourceDevice: transferAuthorization (transfer-type:1(one-click))
+end
+
+SourceDevice -> ES: getAuthentication&transferAuthorization (authorization-token,retrieve-token=true)
+ES -> SourceDevice: transferAuthorization (transfer-token)
+
+SourceDevice->TargetDevice: <color:blue>Short-Term "transfer token" is shared to target device</color>
+TargetDevice -> ES: getAuthentication(auth-type=“token”, subscriber-id=<src-device-imsi@NAI>,transfer-token)\ntransferAuthorization (retrieve-transfer-type=true, target-device)
+ES -> TargetDevice: transferAuthorization (transfer-type:7(one-click-otp))
+group OTP Verification
+TargetDevice -> ES: getAuthentication(auth-type=“token”, subscriber-id=<src-device-imsi@NAI>,transfer-token)\ntransferAuthorization (retrieve-otp=true, target-device)
+ES -> CSG: SendOTPRequest(text with otp,msisdn)
+CSG -> ES: ACK
+ES -> TargetDevice: transferAuthorization (otp-url,otp-post-data)
+CSG -> SourceDevice: SMS OTP to source device
+SourceDevice -> TargetDevice: User input OTP on target device and verify
+TargetDevice -> ES: HTTP POST Webservice[json:{otp-code:xxx,otp-post-data}]
+ES -> ES: Verify the OTP:\n0: will trigger retry UI\n1: successful event\n2,:after max allowed retry transfer is abort.
+ES -> TargetDevice: HTTP POST 200 OK[JSON:{otp-code-state:1}]
+end
+group TTS
+TargetDevice -> ES: getAuthentication (auth-type=“token”, subscriber-id=<src-device-imsi@NAI>,transfer-token)\nenablePushNotification (old-imsi, profile-released)\ntransferSIMService (source-device, target-device)
+note over ES,SMDP: Reserve new ICCID for target device from SM_DP+
+ES -> SMDP: DownloadOrder
+SMDP -> ES: Reserved(ICCID)
+ES -> SMDP: ConfirmOrder
+SMDP -> ES: Success
+ES -> CSG: SubmitSwapSimOrderRequest [CorrelationId,msisdn,newICCID]
+CSG -> ES: SubmitSwapSimOrderResponse [ACK]
+CSG->CSG: CSG will proceed the SIM swap order in background
+ES -> TargetDevice: enablePushNotification[6100]\ntransferSIMService (iccid-profile[ ])
+end
+
+group RaiseEvent, notify SIM Swap Order result
+CRAN->CSG:UpdateOrderStatus indicate ChangeSIMOrder completed
+CSG -> ES: RaiseEvent[event=sim-swap-order-status-changed,CorrelationId,status]
+ES -> CSG: RaiseEvent RESP
+end
+TargetDevice->TargetDevice: Now, the new eSIM profile is ready to use
+
+@enduml 

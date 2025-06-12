@@ -1,0 +1,12 @@
+@startuml
+
+participant "Primary Device" as Primary
+participant "ES" as ES
+participant "CSG" as CSG
+
+Primary -> ES: getEntitlement Request
+ES -> CSG: GetEntitlement
+GSG Response timeout
+ES --> Primary: getEntitlement Response
+
+@enduml 

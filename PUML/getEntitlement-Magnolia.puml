@@ -1,0 +1,13 @@
+@startuml Magnolia-Digi
+
+participant SourceDevice
+participant "Entitlement Server" as ES
+participant "Carrier IT(CSG)" as CSG
+
+
+SourceDevice -> ES: getAuthentication&getEntitlement (iphone-plan-transfer)
+ES -> CSG: CustomerEligibility(MSISDN,OrderType)
+CSG -> ES: ValidationResultList=[MessageCode=0: pass]
+ES -> SourceDevice: getEntitlement (result=STATUS_ENABLED_ENTITLEMENT)
+
+@enduml 

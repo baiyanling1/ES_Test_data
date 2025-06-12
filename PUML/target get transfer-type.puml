@@ -1,0 +1,9 @@
+@startuml Magnolia-Digi
+
+participant TargetDevice
+participant "Entitlement Server" as ES
+
+TargetDevice -> ES: getAuthentication(auth-type=“token”, subscriber-id=<src-device-imsi@NAI>,transfer-token)\ntransferAuthorization (retrieve-transfer-type=true, target-device)
+ES -> TargetDevice: transferAuthorization (transfer-type:7(one-click-otp))
+
+@enduml

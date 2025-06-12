@@ -1,0 +1,10 @@
+@startuml Magnolia-Digi
+
+participant SourceDevice
+participant "Entitlement Server" as ES
+note over SourceDevice,SourceDevice:Pre-Flight Check
+
+SourceDevice -> ES: transferAuthorization (authorization-token,retrieve-transfer-type=true)
+ES -> SourceDevice: transferAuthorization (transfer-type:7(one-click-otp))
+
+@enduml

@@ -7,7 +7,7 @@ if __name__ == '__main__':
     time_start = time.time()
     print("start time: ", time.strftime('%Y-%m-%d %H:%M:%S'))
     isim = Isim()
-    Note = open('/Users/redtea/Desktop/AS-5000000-0908.dat', mode='a')
+    Note = open('/Users/hejian/Desktop/AS-5000000-0908.dat', mode='w')
     FLAG_MAIN = 1
     FLAG_SECD = 2
     alt_smdp_fqdn = "LPA:1$esim.yhdzd.chinamobile.com:8002$"
@@ -15,7 +15,7 @@ if __name__ == '__main__':
     activation_status = 'Active'
     type = 1
     batch_update_code = 'A_220708182148_moa1g'
-    for i in range(1, 5000001):
+    for i in range(1, 50):
         imei = isim.get_imei_id()
         eid = isim.get_eid()
         imsi_main = isim.get_imsi(FLAG_MAIN)

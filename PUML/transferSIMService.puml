@@ -1,0 +1,15 @@
+@startuml Magnolia-Digi
+
+participant TargetDevice
+participant "Entitlement Server" as ES
+participant "Carrier IT(CSG)" as CSG
+
+TargetDevice -> ES: getAuthentication (auth-type=“token”, subscriber-id=<src-device-imsi@NAI>,transfer-token)\nenablePushNotification (old-imsi, profile-released)\ntransferSIMService (source-device, target-device)
+note over ES,SMDP: Reserve new ICCID for target device from SM_DP+
+
+ES -> CSG: SubmitSwapSimOrderRequest [CorrelationId,msisdn,newICCID]
+CSG -> ES: SubmitSwapSimOrderResponse [ACK]
+CSG->CSG: CSG will proceed the SIM swap order in background
+ES -> TargetDevice: enablePushNotification[6100]\ntransferSIMService (iccid-profile[ ])
+
+@enduml

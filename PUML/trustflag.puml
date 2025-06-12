@@ -1,0 +1,10 @@
+@startuml Magnolia-Digi
+participant SourceDevice
+participant "Entitlement Server" as ES
+
+
+SourceDevice -> ES: getAuthentication&getCarrierAuthorizationNonce
+ES -> SourceDevice: getCarrierAuthorizationNonce (nonce)
+SourceDevice -> ES: getAuthentication&authenticateTrustFlag
+ES -> SourceDevice: authenticateTrustFlag (authorization-token)
+@enduml 

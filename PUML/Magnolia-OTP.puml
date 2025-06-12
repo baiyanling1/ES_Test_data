@@ -1,0 +1,67 @@
+@startuml
+' 定义参与者
+participant "Source-Device" as SD
+participant "Target-Device" as TD
+participant "Entitlement Server" as ES
+participant "Carrier Web-Service" as CWS
+
+' 用户条款说明
+note right of CWS
+User Terms and Conditions
+1) Based on transferType, TA with T&C request sent to ES
+2) Entitlement response with T&C in plain text
+3) Carrier to return Agree label and URL and Disagree label and URL, and post-data
+4) UE user choice based on label URL
+5) When Disagree response, transfer is aborted
+end note
+
+' OTP/PIN 说明
+note right of CWS
+OTP / PIN Code Request
+1) Based on transferType, TA with OTP request sent to ES
+2) Entitlement response with OTP URL & post-data, and lost for digit phone number
+3) An OTP SMS is sent to account number
+4) UE post PIN code to carrier web service URL with JSON format
+5) Carrier response verified = 1 with successful event, or NotVerified = 0, will trigger retry UI; If carrier RetryNotAllowed = 2, after max allowed retry transfer is abort.
+end note
+
+' 主流程
+TD -> ES: getAuthentication(auth-type="token", subscriber-id=src-device-imsi(NAb), transfer-token)\ntransferAuthorization (retrieve-transfer-type=true, target-device)
+TD -> ES: transferAuthorization (transfer-type: one-click-to, error.code)
+TD -> ES: getAuthentication(auth-type="token", subscriber-id=src-device-imsi(NAb), transfer-token)\ntransferAuthorization (retrieve=true, target-device)
+TD -> ES: transferAuthorization (to-content (main-text, user-choice-url, user-choice-post-data))
+
+' 用户条款弹窗
+note right of TD
+Term and Conditions
+Main Body text
+text
+[Disagree]  [Agree]
+end note
+
+ES -> TD: HTTP-Post web service JSON ({user-choice: agree}, user-choice-post-data)
+TD -> ES: HTTP-Post 200 OK
+
+TD -> ES: getAuthentication(auth-type="token", subscriber-id=src-device-imsi(NAb), transfer-token)\ntransferAuthorization (retrieve-otp=true, target-device)
+ES -> CWS: SMSC OTP Request
+CWS -> SD: SMSC OTP to source MSISDN
+
+SD -> TD: OTP SMS
+TD -> TD: User Inputs OTP SMS
+
+TD -> ES: HTTP-Post web service JSON ({otp-code: xxxxxx}, otp-post-data)
+ES -> TD: HTTP-Post 200 OK JSON ({otp-content (otp-state: 1)})
+
+TD -> ES: getAuthentication(auth-type="token", subscriber-id=src-device-imsi(NAb), transfer-token)\nenablePushNotification(dp-imsi, profile-released)\ntransferSIMService (source-device, target-device)
+ES -> CWS: Carrier ES2+ Action: Acquire ICCIDs for EID
+CWS -> CWS: Subscription Update: Provision Phone Subscription\nUpdate IMSI to new ICCID and apply the existing plan of the old-Phone
+CWS -> CWS: Carrier ES2+ Action: Release eSIM Profile
+CWS -> CWS: ES9+ Action: Download & Install eSIM Profile
+
+' IMSI更新说明
+note right of CWS
+Update IMSI associated with push token so it correspond to the new device IMSI.
+end note
+
+ES -> TD: getAuthentication (OK), enablePushNotification (OK)\ntransferSIMService (iccid-profile[], [])
+@enduml
