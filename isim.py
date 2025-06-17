@@ -66,7 +66,23 @@ INIT_TAC = [869112, 862413, 869262]
 
 
 class Isim(object):
-    def __init__(self):
+
+    def __init__(self, prefix_and_count_list=None):
+        """
+        :param prefix_and_count_list: 例如 [[4605577, 5], [4605588, 3]]
+        """
+        if prefix_and_count_list is None:
+            prefix_and_count_list = [[4605577, 5]]
+
+        self.prefix_config = prefix_and_count_list
+        self.prefix_index = 0
+        self.suffix_counter = 0
+
+        self.current_prefix = str(self.prefix_config[0][0])
+        self.current_count = self.prefix_config[0][1]
+        self.generated_for_current = 0
+
+        # 其他字段初始化
         self.imsi = INIT_IMSI
         self.msisdn = INIT_MSISDN
         self.iccid = INIT_ICCID
@@ -74,6 +90,38 @@ class Isim(object):
         self.imei_sn = INIT_IMEI_SN
         self.eid = INIT_EID
         self.TAC = random.choice(INIT_TAC)
+
+    def get_next_imsi(self):
+        if self.prefix_index >= len(self.prefix_config):
+            raise StopIteration("所有 IMSI 已分配完毕")
+
+        prefix = self.current_prefix
+        suffix_len = 15 - len(prefix)
+
+        if self.generated_for_current >= self.current_count:
+            # 当前前缀已生成完，切换下一个前缀
+            self.prefix_index += 1
+            if self.prefix_index >= len(self.prefix_config):
+                raise StopIteration("所有 IMSI 已分配完毕")
+
+            self.current_prefix = str(self.prefix_config[self.prefix_index][0])
+            self.current_count = self.prefix_config[self.prefix_index][1]
+            self.suffix_counter = 0
+            self.generated_for_current = 0
+            return self.get_next_imsi()
+
+        suffix = str(self.suffix_counter).zfill(suffix_len)
+        imsi = prefix + suffix
+        self.suffix_counter += 1
+        self.generated_for_current += 1
+        return imsi
+
+    def reset(self):
+        self.prefix_index = 0
+        self.suffix_counter = 0
+        self.generated_for_current = 0
+        self.current_prefix = str(self.prefix_config[0][0])
+        self.current_count = self.prefix_config[0][1]
 
     def get_token(self):
         alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789'
